@@ -18,7 +18,7 @@ Add the package to your `pubspec.yaml`:
 
 ```
 dependencies:  
-  sanity\_query\_builder: latest
+  sanity_query_builder: latest
 ```
 
 Then run:  
@@ -31,11 +31,11 @@ flutter pub get
 ### **Basic Query**
 
 ```
-import 'package:sanity\_query\_builder/sanity\_query\_builder.dart';
+import 'package:sanity_query_builder/sanity_query_builder.dart';
 
-final query \= SanityQueryBuilder()  
+final query = SanityQueryBuilder()  
   .type('post')  
-  .where('publishedAt', '\<=', '2023-01-01')  
+  .where('publishedAt', '<=', '2023-01-01')  
   .project({  
     'title': true,  
     'author': {  
@@ -44,14 +44,14 @@ final query \= SanityQueryBuilder()
   })  
   .build();
 
-print(query.query); // \*\[\[\_type \== $p0 && publishedAt \<= $p1\]\]{title, author-\>{name}}  
+print(query.query); // *[[_type == $p0 && publishedAt <= $p1]]{title, author->{name}}  
 print(query.params); // {p0: 'post', p1: '2023-01-01'}
 ```
 
 ### **Pagination and Sorting**
 
 ```
-final query \= SanityQueryBuilder()  
+final query = SanityQueryBuilder()  
   .type('product')  
   .order('price', 'desc')  
   .range(0, 9)  
@@ -61,20 +61,20 @@ final query \= SanityQueryBuilder()
   })  
   .build();
 
-print(query.query); // \*\[\[\_type \== $p0\]\]{name, price} | order(price desc) \[0..9\]  
+print(query.query); // *[[_type == $p0]]{name, price} | order(price desc) [0..9]  
 print(query.params); // {p0: 'product'}
 ```
 
 ### **Complex Query with Mutations**
 
 ``` 
-final query \= SanityQueryBuilder()  
+final query = SanityQueryBuilder()  
   .type('order')  
   .where('status', '==', 'completed')  
   .mutate('count')  
   .build();
 
-print(query.query); // \*\[\[\_type \== $p0 && status \== $p1\]\] | count()  
+print(query.query); // *[[_type == $p0 && status == $p1]] | count()  
 print(query.params); // {p0: 'order', p1: 'completed'}
 ```
 
