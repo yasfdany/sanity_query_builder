@@ -44,7 +44,7 @@ final query = SanityQueryBuilder()
   })  
   .build();
 
-print(query.query); // *[[_type == $p0 && publishedAt <= $p1]]{title, author->{name}}  
+print(query.query); // *[_type == $p0 && publishedAt <= $p1]{title, author->{name}}  
 print(query.params); // {p0: 'post', p1: '2023-01-01'}
 ```
 
@@ -61,7 +61,7 @@ final query = SanityQueryBuilder()
   })  
   .build();
 
-print(query.query); // *[[_type == $p0]]{name, price} | order(price desc) [0..9]  
+print(query.query); // *[_type == $p0]{name, price} | order(price desc) [0..9]  
 print(query.params); // {p0: 'product'}
 ```
 
@@ -74,7 +74,7 @@ final query = SanityQueryBuilder()
   .mutate('count')  
   .build();
 
-print(query.query); // *[[_type == $p0 && status == $p1]] | count()  
+print(query.query); // *[_type == $p0 && status == $p1] | count()  
 print(query.params); // {p0: 'order', p1: 'completed'}
 ```
 
