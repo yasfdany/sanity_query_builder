@@ -1,98 +1,79 @@
-# **Sanity Query Builder for Flutter**
+# Sanity Query Builder
 
-A powerful and flexible query builder for constructing GROQ queries for Sanity.io in Flutter applications. This package simplifies the process of building complex queries with support for filtering, projections, ordering, pagination, and mutations.
+The Query Builder library provides a fluent interface to help you build complex queries programmatically. It breaks down the query creation process into modular parts that let you combine filters, projections, sorting, slicing, mutations, and parameter binding in a natural, chainable way.
 
-## **Features**
+## Key Concepts
 
-* **Type-safe query building**: Easily construct GROQ queries with a fluent API.  
-* **Filtering**: Add conditions to your queries with `where` and `whereRaw`.  
-* **Projections**: Select specific fields and nested documents.  
-* **Ordering**: Sort results by one or more fields.  
-* **Pagination**: Limit results using `range`.  
-* **Mutations**: Apply GROQ mutations like `count` or `reverse`.  
-* **Custom Parameters**: Add reusable parameters to your queries.
+- **Query**: The complete statement you send for execution. It includes filters, ordering, range selections, projections, and any additional modifications.
+- **Projection**: Specifies which fields (and nested sub-fields) to return as part of the query result.
+- **Filters**: Conditions that limit the query results to documents that meet certain criteria.
+- **Ordering**: Determines the sort order of the query results.
+- **Range / Indexing**: Used for pagination or selecting a subset of the results.
+- **Mutations**: Functions applied to the results or documents, if your query requires any transformation.
+- **Parameters**: Dynamic values that are bound to the query at execution time.
 
-## **Installation**
+## Features
 
-Add the package to your `pubspec.yaml`:  
+- **Fluent API**: Easily chain method calls to construct queries.
+- **Flexible Filtering**: Add simple filters, complex grouped filters (using parentheses), or raw conditions.
+- **Detailed Projections**: Define exactly which fields to include, with support for nested objects, arrays, and references.
+- **Ordering and Slicing**: Specify sort orders and limit the result set through ranges or direct indexing.
+- **Dynamic Parameters**: Bind variables to your query to handle dynamic values.
+- **Mutations**: Optionally apply functions to manipulate or transform the data.
 
-```
-dependencies:  
-  sanity_query_builder: latest
-```
+## Usage
 
-Then run:  
-```
-flutter pub get
-```
+### 1. Building Projections
 
-## **Usage**
+Projections let you select the fields and nested objects to return. You can specify individual fields, alias expressions, arrays, references, and nested objects.
 
-### **Basic Query**
-
-```
-import 'package:sanity_query_builder/sanity_query_builder.dart';
-
-final query = SanityQueryBuilder()  
-  .type('post')  
-  .where('publishedAt', '<=', '2023-01-01')  
-  .project({  
-    'title': true,  
-    'author': {  
-      'name': true,  
-    },  
-  })  
-  .build();
-
-print(query.query); // *[_type == $p0 && publishedAt <= $p1]{title, author->{name}}  
-print(query.params); // {p0: 'post', p1: '2023-01-01'}
+```dart
+final projection = ProjectionBuilder()
+    .field('title')
+    .field('slug')
+    .object('author', (pb) => pb
+        .field('name')
+        .field('profileImage')
+    )
+    .array('comments', (pb) => pb
+        .field('text')
+        .object('user', (subPb) => subPb.field('username'))
+    )
+    .spread() // Include all other fields that aren't explicitly defined.
+    .build();
 ```
 
-### **Pagination and Sorting**
+### 2. Constructing the Query
 
-```
-final query = SanityQueryBuilder()  
-  .type('product')  
-  .order('price', 'desc')  
-  .range(0, 9)  
-  .project({  
-    'name': true,  
-    'price': true,  
-  })  
-  .build();
+You can build a complete query by combining filters, ordering, range selection, mutations, and the projection. The query builder lets you:
 
-print(query.query); // *[_type == $p0]{name, price} | order(price desc) [0..9]  
-print(query.params); // {p0: 'product'}
-```
+- **Filter Documents**: Use conditions such as type, specific field values, and even group conditions using parentheses.
+- **Order Results**: Define how the results should be sorted.
+- **Select Ranges**: Limit the result set to a specific index range or a single document.
+- **Bind Parameters**: Attach dynamic values to your query.
 
-### **Complex Query with Mutations**
+```dart
+final query = SanityQueryBuilder()
+    .type('post')  // Filter by document type.
+    .where('published', '==', true) // Only include published posts.
+    .inParentheses((qb) => qb
+        .where('rating', '>=', 4)
+        .orWhere('views', '>', 1000)) // Grouped filters for rating or views.
+    .project(projection) // Attach the projection built earlier.
+    .order('date', 'desc') // Sort by date in descending order.
+    .range(0, 10) // Limit to the first 10 documents.
+    .param('customParam', 'example') // Bind any custom parameter if needed.
+    .build();
 
-``` 
-final query = SanityQueryBuilder()  
-  .type('order')  
-  .where('status', '==', 'completed')  
-  .mutate('count')  
-  .build();
-
-print(query.query); // *[_type == $p0 && status == $p1] | count()  
-print(query.params); // {p0: 'order', p1: 'completed'}
+print('Query: ${query.query}');
+print('Params: ${query.params}');
 ```
 
-## **API Reference**
+### 3. Executing the Query
 
-### **SanityQueryBuilder**
+The result of the build process is a `SanityQuery` object that contains:
 
-#### **Methods**
+- **query**: The complete query string.
+- **params**: A map of any bound parameters.
 
-| Method | Description |
-| :---- | :---- |
-| `type(String type)` | Filters documents by the specified type. |
-| `slug(String slug)` | Filters documents by the specified slug. |
-| `where(String field, String operator, dynamic value)` | Adds a filter condition. |
-| `whereRaw(String condition)` | Adds a raw filter condition. |
-| `project(Map<String, dynamic> projection)` | Sets the projection for the query. |
-| `order(String field, [String direction = 'asc'])` | Adds an order specification. |
-| `range(int start, int end)` | Sets the range for pagination. |
-| `mutate(String function)` | Adds a mutation function. |
-| `param(String name, dynamic value)` | Adds a custom parameter. |
-| `build()` | Builds the query and returns a `SanityQuery` object. |
+You can then pass these to your data-fetching function to execute the query against your dataset.
