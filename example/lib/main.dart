@@ -9,12 +9,15 @@ void main() {
   final query = SanityQueryBuilder()
       .type('page')
       .where('language', '==', 'en-US')
-      .where('isRoot')
-      .where('isIndex')
+      .inParentheses((b) {
+        return b.where('isRoot').where('isIndex');
+      })
       .first()
       .project(projection)
       .build();
+
   print(query.query);
+  // *[_type == "page" && language == "en-US" && (isRoot && isIndex)][0]{language, blocks[]{..., image{_type, "url": asset->url, "info": asset->metadata{...dimensions}}, cardItems[]{..., image{_type, "url": asset->url, "info": asset->metadata{...dimensions}}}, userHighlightCards[]->{..., image{_type, "url": asset->url, "info": asset->metadata{...dimensions}}}, logos[]{_type, "url": asset->url}}}
 }
 
 ProjectionBuilder _blockProjection(ProjectionBuilder b) {
