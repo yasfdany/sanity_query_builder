@@ -8,9 +8,9 @@ class SanityQueryBuilder {
   final Map<String, dynamic> _params = {};
   Map<String, dynamic>? _projection;
 
-  int _paramCounter = 0;
   int? _start;
   int? _end;
+  int? _index;
 
   /// Sets the type filter for the query.
   ///
@@ -22,15 +22,51 @@ class SanityQueryBuilder {
   /// [slug] - The slug to filter by.
   SanityQueryBuilder slug(String slug) => where('slug.current', '==', slug);
 
+  /// Wrap the query in parentheses.
+  ///
+  /// [builder] - The builder function to wrap in parentheses.
+  SanityQueryBuilder inParentheses(
+    SanityQueryBuilder Function(SanityQueryBuilder) builder,
+  ) {
+    final innerBuilder = SanityQueryBuilder();
+    final innerFilters = builder(innerBuilder)._filters;
+    if (innerFilters.isNotEmpty) {
+      _filters.add('(');
+      _filters.addAll(innerFilters);
+      _filters.add(')');
+    }
+    return this;
+  }
+
   /// Adds a filter condition to the query.
   ///
   /// [field] - The field to filter.
   /// [operator] - The operator to use for the filter.
   /// [value] - The value to filter by.
-  SanityQueryBuilder where(String field, String operator, dynamic value) {
-    final paramKey = _generateParamKey();
-    _params[paramKey] = value;
-    _filters.add('$field $operator \$$paramKey');
+  SanityQueryBuilder where(String field, [String? operator, dynamic value]) {
+    if (operator == null || value == null) {
+      _filters.add(" && $field");
+    } else {
+      _filters.add(
+        " && $field $operator ${value is String ? '"$value"' : value}",
+      );
+    }
+    return this;
+  }
+
+  /// Adds an 'or' filter condition to the query.
+  ///
+  /// [field] - The field to filter.
+  /// [operator] - The operator to use for the filter.
+  /// [value] - The value to filter by.
+  SanityQueryBuilder orWhere(String field, [String? operator, dynamic value]) {
+    if (operator == null || value == null) {
+      _filters.add(" || $field");
+    } else {
+      _filters.add(
+        " || $field $operator ${value is String ? '"$value"' : value}",
+      );
+    }
     return this;
   }
 
@@ -56,6 +92,16 @@ class SanityQueryBuilder {
   /// [direction] - The direction of the order (default is 'asc').
   SanityQueryBuilder order(String field, [String direction = 'asc']) {
     _orderSpecs.add('$field $direction');
+    return this;
+  }
+
+  SanityQueryBuilder get(int index) {
+    _index = index;
+    return this;
+  }
+
+  SanityQueryBuilder first() {
+    get(0);
     return this;
   }
 
@@ -93,23 +139,29 @@ class SanityQueryBuilder {
     final queryParts = <String>['*'];
 
     if (_filters.isNotEmpty) {
-      queryParts.add('[${_filters.join(' && ')}]');
-    }
-
-    if (_projection != null) {
-      queryParts.add('{${_buildProjection(_projection!)}}');
+      queryParts.add('[${_filters.join('')}]'
+          .replaceAll('[ && ', '[')
+          .replaceAll('( && ', ' && (')
+          .replaceAll('[ || ', '[')
+          .replaceAll('( || ', ' || ('));
     }
 
     if (_orderSpecs.isNotEmpty) {
       queryParts.add(' | order(${_orderSpecs.join(', ')})');
     }
 
-    if (_start != null && _end != null) {
-      queryParts.add('[$_start..$_end]');
-    }
-
     if (_mutations.isNotEmpty) {
       queryParts.add(' | ${_mutations.join(' | ')}');
+    }
+
+    if (_start != null && _end != null) {
+      queryParts.add('[$_start..$_end]');
+    } else if (_index != null) {
+      queryParts.add('[$_index]');
+    }
+
+    if (_projection != null) {
+      queryParts.add('{${_buildProjection(_projection!)}}');
     }
 
     return SanityQuery(
@@ -118,27 +170,27 @@ class SanityQueryBuilder {
     );
   }
 
-  /// Generates a unique parameter key.
-  ///
-  /// Returns a string representing the parameter key.
-  String _generateParamKey() => 'p${_paramCounter++}';
-
-  /// Builds the projection string from the projection map.
-  ///
-  /// [projection] - The projection map.
-  ///
-  /// Returns a string representing the projection.
   String _buildProjection(Map<String, dynamic> projection) {
     return projection.entries.map((entry) {
       final key = entry.key;
       final value = entry.value;
 
-      if (value is Map) {
-        final isArray = key.endsWith('[]');
-        final cleanKey = isArray ? key.replaceAll('[]', '') : key;
-        final arrayNotation = isArray ? '[]' : '';
-        return '$cleanKey$arrayNotation->{${_buildProjection(value as Map<String, dynamic>)}}';
+      if (key == '...') return '...';
+
+      if (value is Map<String, dynamic>) {
+        final isArray = key.contains('[]');
+        final isReference = key.contains('->');
+        final cleanKey = key.replaceAll(RegExp(r'\[\]|->'), '');
+        final modifiers = [
+          if (isArray) '[]',
+          if (isReference) '->',
+        ].join();
+
+        return '$cleanKey$modifiers{${_buildProjection(value)}}';
       }
+
+      if (value is String) return '"$key": $value';
+
       return key;
     }).join(', ');
   }
