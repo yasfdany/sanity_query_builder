@@ -1,6 +1,6 @@
 name: sanity_query_builder
 description: "Flutter/Dart package for building type-safe Sanity GROQ queries with fluent API, nested projections, complex filters, parameters, and composable syntax for Sanity CMS integration"
-version: 0.0.2
+version: 0.0.3
 homepage: https://github.com/yasfdany/sanity_query_builder
 
 environment:

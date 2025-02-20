@@ -1,0 +1,17 @@
+*[_type == "page" && language == "en-US" && (isRoot && isIndex)][0]{
+    language, 
+    blocks[]{
+        ..., 
+        image{_type, "url": asset->url, "info": asset->metadata{...dimensions}}, 
+        cardItems[]{
+            ..., 
+            image{_type, "url": asset->url, "info": asset->metadata{...dimensions}}
+        }, 
+        userHighlightCards[]->{
+            ..., 
+            image{_type, "url": asset->url, "info": asset->metadata{...dimensions}}
+        }, 
+        logos[]{_type, "url": asset->url}, 
+        "relatedArticles": *[_type == "travelGuide" && language == "en-US"]
+    }
+}

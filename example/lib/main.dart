@@ -17,16 +17,20 @@ void main() {
       .build();
 
   print(query.query);
-  // *[_type == "page" && language == "en-US" && (isRoot && isIndex)][0]{language, blocks[]{..., image{_type, "url": asset->url, "info": asset->metadata{...dimensions}}, cardItems[]{..., image{_type, "url": asset->url, "info": asset->metadata{...dimensions}}}, userHighlightCards[]->{..., image{_type, "url": asset->url, "info": asset->metadata{...dimensions}}}, logos[]{_type, "url": asset->url}}}
+  // *[_type == "travelGuide" && language == "en-US" && _type == "page" && language == "en-US" && (isRoot && isIndex)][0]{language, blocks[]{..., image{_type, "url": asset->url, "info": asset->metadata{...dimensions}}, cardItems[]{..., image{_type, "url": asset->url, "info": asset->metadata{...dimensions}}}, userHighlightCards[]->{..., image{_type, "url": asset->url, "info": asset->metadata{...dimensions}}}, logos[]{_type, "url": asset->url}, "relatedArticles": *[_type == "travelGuide" && language == "en-US"]}}
 }
 
 ProjectionBuilder _blockProjection(ProjectionBuilder b) {
+  final relatedArticleQuery =
+      SanityQueryBuilder().type('travelGuide').where('language', '==', 'en-US');
+
   return b
       .spread()
       .object('image', _imageProjection)
       .array('cardItems', _cardProjection)
       .arrayReference('userHighlightCards', _cardProjection)
-      .array('logos', _logosProjection);
+      .array('logos', _logosProjection)
+      .query('relatedArticles', relatedArticleQuery);
 }
 
 ProjectionBuilder _imageProjection(ProjectionBuilder b) {
