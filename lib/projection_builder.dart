@@ -1,3 +1,5 @@
+import 'package:sanity_query_builder/sanity_query_builder.dart';
+
 class ProjectionBuilder {
   final Map<String, dynamic> _projection = {};
 
@@ -45,6 +47,22 @@ class ProjectionBuilder {
     ProjectionBuilder Function(ProjectionBuilder) builder,
   ) {
     _projection[fieldName] = builder(ProjectionBuilder())._projection;
+    return this;
+  }
+
+  ProjectionBuilder query(
+    String fieldName,
+    SanityQueryBuilder query,
+  ) {
+    _projection[fieldName] = query.build().query;
+    return this;
+  }
+
+  ProjectionBuilder rawQuery(
+    String fieldName,
+    String query,
+  ) {
+    _projection[fieldName] = query;
     return this;
   }
 
